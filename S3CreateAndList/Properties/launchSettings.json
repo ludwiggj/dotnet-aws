@@ -1,0 +1,7 @@
+{
+  "profiles": {
+    "S3CreateAndList": {
+      "commandName": "Project"
+    }
+  }
+}

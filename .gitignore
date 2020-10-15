@@ -1,10 +1,4 @@
-
-S3CreateAndList/.vs/
-
-S3CreateAndList/bin/
-
-S3CreateAndList/obj/
-
-S3CreateAndList/Properties/launchSettings.json
-
+.vs
+bin
+obj
 S3CreateAndList/S3CreateAndList.args.json
