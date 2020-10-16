@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Globalization;
 using System.Linq;
 using System.Threading.Tasks;
 using Amazon.CloudWatch;
@@ -15,26 +14,71 @@ namespace Cloudwatch
         private const string METRIC_NAME_429_REQUESTS_PER_DAY = "429: Requests Per Day";
         private const int ONE_DAY_IN_SECONDS = 86400;
         private const string PACIFIC_STANDARD_TIME = "Pacific Standard Time";
+        private const string WRITE_METRICS = "Write Metrics";
+        private const string READ_METRICS = "Read Metrics";
+        private const string WRITE_READ_METRICS = "Read Write Metrics";
 
         private readonly IAmazonCloudWatch CloudwatchClient = new AmazonCloudWatchClient();
-        private readonly Random rnd = new Random();
+        private static readonly Random rnd = new Random();
 
         static void Main(string[] args)
         {
-            MainAsync().GetAwaiter().GetResult();
+            String command = ParseArgument(args);
+            MainAsync(command).GetAwaiter().GetResult();
         }
 
-        private static async Task MainAsync()
+        private static async Task MainAsync(String command)
         {
             var program = new Program();
-            await WriteMetrics(program);
-            await ReadMetrics(program);
+
+            switch (command)
+            {
+                case WRITE_METRICS:                
+                    await WriteMetrics(program);
+                    break;
+
+                case READ_METRICS:                
+                    await ReadMetrics(program);
+                    break;
+
+                case WRITE_READ_METRICS:
+                    await WriteMetrics(program);
+                    await ReadMetrics(program);
+                    break;
+            }                      
+        }
+
+        private static String ParseArgument(string[] args)
+        {
+            String result;
+            if (args.Length == 1)
+            {
+                switch (args[0])
+                {
+                    case "W":
+                    case "w":
+                        result = WRITE_METRICS;
+                        break;
+                    case "R":
+                    case "r":
+                        result = READ_METRICS;
+                        break;
+                    default:
+                        result = WRITE_READ_METRICS;
+                        break;
+                }
+            } else
+            {
+                result = WRITE_READ_METRICS;
+            }
+            return result;
         }
 
         // Write metrics
         private static async Task WriteMetrics(Program program)
         {
-            MetricDatum[] metrics = program.BuildMetrics(METRIC_NAME_429_REQUESTS_PER_DAY, StandardUnit.Count, 20);
+            Console.WriteLine(">>>> Writing metrics");
+            MetricDatum[] metrics = BuildMetrics(METRIC_NAME_429_REQUESTS_PER_DAY, StandardUnit.Count, 20);
 
             foreach (var m in metrics)
             {
@@ -44,7 +88,7 @@ namespace Cloudwatch
             await program.SendMetricsBatchAsync(GA_METRICS_NAMESPACE, metrics);
         }
 
-        private MetricDatum[] BuildMetrics(string name, StandardUnit unit, int metricCount)
+        private static MetricDatum[] BuildMetrics(string name, StandardUnit unit, int metricCount)
         {
             return Enumerable
                 .Range(0, metricCount)
@@ -52,7 +96,7 @@ namespace Cloudwatch
                 .ToArray();
         }
 
-        private MetricDatum BuildMetric(string name, StandardUnit unit, double value)
+        private static MetricDatum BuildMetric(string name, StandardUnit unit, double value)
         {
             return new MetricDatum
             {
@@ -63,7 +107,7 @@ namespace Cloudwatch
             };
         }
 
-        public static DateTime RoundDown(DateTime dt, TimeSpan d)
+        private static DateTime RoundDown(DateTime dt, TimeSpan d)
         {
             var delta = dt.Ticks % d.Ticks;
             return new DateTime(dt.Ticks - delta, dt.Kind);
@@ -88,7 +132,8 @@ namespace Cloudwatch
 
         // Read metrics
         private static async Task ReadMetrics(Program program)
-        {                       
+        {
+            Console.WriteLine(">>>> Reading metrics");
             TimeZoneInfo? pst = GetTimeZoneInfo(PACIFIC_STANDARD_TIME);
             if (pst != null)
             {
@@ -98,7 +143,9 @@ namespace Cloudwatch
                 DateTime startTimeUTC = ConvertDateToUTC(currentDateInPST, pst);
                 DateTime endTimeUTC = ConvertDateToUTC(nextDateInPST, pst);                
 
-                GetMetricDataResponse resp = await program.GetMetricsAsync(startTimeUTC, endTimeUTC);
+                GetMetricDataResponse resp = await program.GetMetricsAsync(startTimeUTC, endTimeUTC);            
+
+                Console.WriteLine($"Metric count: {GetMetricCount(resp)}");
 
                 if (resp.MetricDataResults.Any())
                     foreach (var r in resp.MetricDataResults)
@@ -187,6 +234,20 @@ namespace Cloudwatch
                 }
             };
             return await CloudwatchClient.GetMetricDataAsync(req);
+        }
+
+        private static double GetMetricCount(GetMetricDataResponse resp)
+        {
+            double result = 0;
+            if (resp.MetricDataResults.Any())
+            {
+                var values = resp.MetricDataResults[0].Values;
+                if (values.Any())
+                {
+                    result = values[0];
+                }
+            }
+            return result;
         }
     }
 }
