@@ -149,8 +149,11 @@ namespace Cloudwatch
 
                 if (resp.MetricDataResults.Any())
                     foreach (var r in resp.MetricDataResults)
-                        foreach (var rValue in r.Values)
-                            Console.WriteLine(rValue);
+                    {
+                        Console.WriteLine(r.StatusCode);
+                        Console.WriteLine(string.Join(",", r.Timestamps.ToArray()));
+                        Console.WriteLine(string.Join(",", r.Values.ToArray()));                       
+                    }
             }
             else
             {
@@ -211,9 +214,6 @@ namespace Cloudwatch
             {
                 StartTimeUtc = startTimeUTC,
                 EndTimeUtc = endTimeUTC,
-                //MaxDatapoints = 10,
-                //ScanBy = new ScanBy("TimestampDescending"),
-                //NextToken = nextToken,
                 MetricDataQueries = new List<MetricDataQuery>
                 {
                     new MetricDataQuery
@@ -228,7 +228,7 @@ namespace Cloudwatch
                                 MetricName = METRIC_NAME_429_REQUESTS_PER_DAY,
                                 Namespace = GA_METRICS_NAMESPACE
                             },
-                            Period = ONE_DAY_IN_SECONDS
+                            Period = ONE_DAY_IN_SECONDS                          
                         }
                     }
                 }
