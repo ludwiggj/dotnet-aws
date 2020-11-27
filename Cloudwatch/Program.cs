@@ -11,7 +11,11 @@ namespace Cloudwatch
     class Program
     {
         private const string GA_METRICS_NAMESPACE = "SessionCam/BiDirectionalReportProcessor/GoogleAnalytics";
-        private const string METRIC_NAME_429_REQUESTS_PER_DAY = "429: Requests Per Day";
+        private const string METRIC_NAME_429_REQUESTS_PER_DAY = "HTTP 429-Reqs/day";
+        private const string METRIC_REPORT_REQUEST = "Report Request";
+        private const string METRIC_REPORT_REQUESTS_THROTTLED = "Report Requests-Throttled";
+        private const string METRIC_SEGMENT_WRITTEN = "Segment Written";
+        private const string METRIC_CLIENT_BLOCKED = "Client Blocked";
         private const int ONE_DAY_IN_SECONDS = 86400;
         private const string PACIFIC_STANDARD_TIME = "Pacific Standard Time";
         private const string WRITE_METRICS = "Write Metrics";
@@ -19,6 +23,8 @@ namespace Cloudwatch
         private const string WRITE_READ_METRICS = "Read Write Metrics";
 
         private readonly IAmazonCloudWatch CloudwatchClient = new AmazonCloudWatchClient();
+        //private readonly IAmazonCloudWatch CloudwatchClient = new AmazonCloudWatchClient(string awsAccessKeyId, string awsSecretAccessKey);
+
         private static readonly Random rnd = new Random();
 
         static void Main(string[] args)
@@ -78,7 +84,7 @@ namespace Cloudwatch
         private static async Task WriteMetrics(Program program)
         {
             Console.WriteLine(">>>> Writing metrics");
-            MetricDatum[] metrics = BuildMetrics(METRIC_NAME_429_REQUESTS_PER_DAY, StandardUnit.Count, 20);
+            MetricDatum[] metrics = BuildMetrics(METRIC_NAME_429_REQUESTS_PER_DAY, StandardUnit.Count, 1);
 
             foreach (var m in metrics)
             {
@@ -131,29 +137,39 @@ namespace Cloudwatch
         }
 
         // Read metrics
-        private static async Task ReadMetrics(Program program)
+        private static async Task ReadMetrics(Program program, int noOfDays = 5)
         {
             Console.WriteLine(">>>> Reading metrics");
+
+            List<(string, string)> metrics = new List<(string, string)> {
+                ("metricRequestClientBlocked", METRIC_CLIENT_BLOCKED),
+                ("metricRequestReportRequestsThrottled", METRIC_REPORT_REQUESTS_THROTTLED),
+                ("metricRequestReportRequest", METRIC_REPORT_REQUEST),
+                ("metricRequest429RequestsPerDay", METRIC_NAME_429_REQUESTS_PER_DAY),                                
+                ("metricRequestSegmentWritten", METRIC_SEGMENT_WRITTEN)
+            };
+
             TimeZoneInfo? pst = GetTimeZoneInfo(PACIFIC_STANDARD_TIME);
             if (pst != null)
             {
                 Console.WriteLine($"TimeZone: {pst}");
-                DateTime currentDateInPST = CurrentDateInTimeZone(pst);
-                DateTime nextDateInPST = currentDateInPST.AddDays(1).AddSeconds(-1);
-                DateTime startTimeUTC = ConvertDateToUTC(currentDateInPST, pst);
-                DateTime endTimeUTC = ConvertDateToUTC(nextDateInPST, pst);                
+                var currentDateInTimeZone = CurrentDateInTimeZone(pst);
+                for (int i = 0; i < noOfDays; i++)
+                {
+                    DateTime currentDateInPST = currentDateInTimeZone.AddDays(-i);
+                    DateTime nextDateInPST = currentDateInPST.AddDays(1).AddSeconds(-1);
+                    DateTime startTimeUTC = ConvertDateToUTC(currentDateInPST, pst);
+                    DateTime endTimeUTC = ConvertDateToUTC(nextDateInPST, pst);
 
-                GetMetricDataResponse resp = await program.GetMetricsAsync(startTimeUTC, endTimeUTC);            
+                    Console.WriteLine($"Getting metrics from [{startTimeUTC}] to [{endTimeUTC}]");
 
-                Console.WriteLine($"Metric count: {GetMetricCount(resp)}");
-
-                if (resp.MetricDataResults.Any())
-                    foreach (var r in resp.MetricDataResults)
+                    foreach ((string metricQueryId, string metricName) in metrics)
                     {
-                        Console.WriteLine(r.StatusCode);
-                        Console.WriteLine(string.Join(",", r.Timestamps.ToArray()));
-                        Console.WriteLine(string.Join(",", r.Values.ToArray()));                       
+                        GetMetricDataResponse resp = await program.GetMetricsAsync(startTimeUTC, endTimeUTC, metricQueryId, metricName);
+
+                        Console.WriteLine($"Metric [{metricName}] count is [{GetMetricCount(resp)}]");
                     }
+                }
             }
             else
             {
@@ -197,19 +213,11 @@ namespace Cloudwatch
 
         private static DateTime ConvertDateToUTC(DateTime time, TimeZoneInfo tzi)
         {
-            DateTime dtUTC = TimeZoneInfo.ConvertTime(time, tzi, TimeZoneInfo.Utc);
-            Console.WriteLine("{0} ({1}) = {2} (UTC)",
-                        time,
-                        tzi.IsDaylightSavingTime(time) ? tzi.DaylightName : tzi.StandardName,
-                        dtUTC
-                        );
-            return dtUTC;
+            return TimeZoneInfo.ConvertTime(time, tzi, TimeZoneInfo.Utc);
         }
 
-        private async Task<GetMetricDataResponse> GetMetricsAsync(DateTime startTimeUTC, DateTime endTimeUTC)
+        private async Task<GetMetricDataResponse> GetMetricsAsync(DateTime startTimeUTC, DateTime endTimeUTC, string metricQueryId, string metricName)
         {
-            Console.WriteLine($"Getting metrics from [{startTimeUTC}] to [{endTimeUTC}]");
-
             var req = new GetMetricDataRequest
             {
                 StartTimeUtc = startTimeUTC,
@@ -218,14 +226,14 @@ namespace Cloudwatch
                 {
                     new MetricDataQuery
                     {
-                        Id = "metricRequest429RequestsPerDay",
+                        Id = metricQueryId,
 
                         MetricStat = new MetricStat
                         {
                             Stat = "Sum",
                             Metric = new Metric
                             {
-                                MetricName = METRIC_NAME_429_REQUESTS_PER_DAY,
+                                MetricName = metricName,
                                 Namespace = GA_METRICS_NAMESPACE
                             },
                             Period = ONE_DAY_IN_SECONDS                          
