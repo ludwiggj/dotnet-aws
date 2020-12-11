@@ -11,11 +11,26 @@ namespace Cloudwatch
     class Program
     {
         private const string GA_METRICS_NAMESPACE = "SessionCam/BiDirectionalReportProcessor/GoogleAnalytics";
-        private const string METRIC_NAME_429_REQUESTS_PER_DAY = "HTTP 429-Reqs/day";
-        private const string METRIC_REPORT_REQUEST = "Report Request";
+
+        private const string METRIC_CLIENT_BLOCKED = "Client Blocked";
         private const string METRIC_REPORT_REQUESTS_THROTTLED = "Report Requests-Throttled";
         private const string METRIC_SEGMENT_WRITTEN = "Segment Written";
-        private const string METRIC_CLIENT_BLOCKED = "Client Blocked";
+        private const string METRIC_REPORT_REQUEST = "Report Request";
+        private const string METRIC_HTTP_400 = "HTTP 400";
+        private const string METRIC_HTTP_401 = "HTTP 401";
+        private const string METRIC_HTTP_403 = "HTTP 403";
+        private const string METRIC_HTTP_429_FAILED_REQUESTS_TOO_HIGH = "HTTP 429-Failed reqs high";
+        private const string METRIC_HTTP_429_OTHER = "HTTP 429-Other";
+        private const string METRIC_NAME_429_REQUESTS_PER_DAY = "HTTP 429-Reqs/day";
+        private const string METRIC_HTTP_429_REQUESTS_PER_USER_PER_100s = "HTTP 429-Reqs/user/100s";
+        private const string METRIC_HTTP_429_REQUESTS_PER_VIEW_PER_DAY = "HTTP 429-Reqs/view/day";
+        private const string METRIC_HTTP_429_TOO_MANY_CONCURRENT_CONNECTIONS = "HTTP 429-Concurrent conns";
+        private const string METRIC_HTTP_500 = "HTTP 500";
+        private const string METRIC_HTTP_502 = "HTTP 502";
+        private const string METRIC_HTTP_503_OTHER = "HTTP 503-Other";
+        private const string METRIC_HTTP_503_UNAVAILABLE = "HTTP 503-Unavailable";
+        private const string METRIC_HTTP_OTHER = "HTTP-Other";
+
         private const int ONE_DAY_IN_SECONDS = 86400;
         private const string PACIFIC_STANDARD_TIME = "Pacific Standard Time";
         private const string WRITE_METRICS = "Write Metrics";
@@ -23,7 +38,6 @@ namespace Cloudwatch
         private const string WRITE_READ_METRICS = "Read Write Metrics";
 
         private readonly IAmazonCloudWatch CloudwatchClient = new AmazonCloudWatchClient();
-        //private readonly IAmazonCloudWatch CloudwatchClient = new AmazonCloudWatchClient(string awsAccessKeyId, string awsSecretAccessKey);
 
         private static readonly Random rnd = new Random();
 
@@ -144,12 +158,25 @@ namespace Cloudwatch
             List<(string, string)> metrics = new List<(string, string)> {
                 ("metricRequestClientBlocked", METRIC_CLIENT_BLOCKED),
                 ("metricRequestReportRequestsThrottled", METRIC_REPORT_REQUESTS_THROTTLED),
+                ("metricRequestSegmentWritten", METRIC_SEGMENT_WRITTEN),
                 ("metricRequestReportRequest", METRIC_REPORT_REQUEST),
-                ("metricRequest429RequestsPerDay", METRIC_NAME_429_REQUESTS_PER_DAY),                                
-                ("metricRequestSegmentWritten", METRIC_SEGMENT_WRITTEN)
+                ("metricRequest400", METRIC_HTTP_400),
+                ("metricRequest401", METRIC_HTTP_401),
+                ("metricRequest403", METRIC_HTTP_403),
+                ("metricRequest429FailedRequestsTooHigh", METRIC_HTTP_429_FAILED_REQUESTS_TOO_HIGH),
+                ("metricRequest429Other", METRIC_HTTP_429_OTHER),
+                ("metricRequest429RequestsPerDay", METRIC_NAME_429_REQUESTS_PER_DAY),
+                ("metricRequest429RequestsPerUserPer100s", METRIC_HTTP_429_REQUESTS_PER_USER_PER_100s),
+                ("metricRequest429RequestsPerViewPerDay", METRIC_HTTP_429_REQUESTS_PER_VIEW_PER_DAY),
+                ("metricRequest429TooManyConcurrentConnections", METRIC_HTTP_429_TOO_MANY_CONCURRENT_CONNECTIONS),
+                ("metricRequest500", METRIC_HTTP_500),
+                ("metricRequest502", METRIC_HTTP_502),
+                ("metricRequest503Other", METRIC_HTTP_503_OTHER),
+                ("metricRequest503Unavailable", METRIC_HTTP_503_UNAVAILABLE),
+                ("metricRequestOther", METRIC_HTTP_OTHER)
             };
 
-            TimeZoneInfo? pst = GetTimeZoneInfo(PACIFIC_STANDARD_TIME);
+        TimeZoneInfo? pst = GetTimeZoneInfo(PACIFIC_STANDARD_TIME);
             if (pst != null)
             {
                 Console.WriteLine($"TimeZone: {pst}");
