@@ -4,6 +4,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using Amazon.CloudWatch;
 using Amazon.CloudWatch.Model;
+using Amazon.Runtime.CredentialManagement;
 
 namespace Cloudwatch
 {
@@ -37,7 +38,15 @@ namespace Cloudwatch
         private const string READ_METRICS = "Read Metrics";
         private const string WRITE_READ_METRICS = "Read Write Metrics";
 
-        private readonly IAmazonCloudWatch CloudwatchClient = new AmazonCloudWatchClient();
+        private readonly IAmazonCloudWatch CloudwatchClient = getCloudwatchClient();
+
+        private static IAmazonCloudWatch getCloudwatchClient()
+        {
+            var sharedFile = new SharedCredentialsFile();
+            sharedFile.TryGetProfile("live", out var profile);
+            AWSCredentialsFactory.TryGetAWSCredentials(profile, sharedFile, out var credentials);
+            return new AmazonCloudWatchClient(credentials);
+        }        
 
         private static readonly Random rnd = new Random();
 
