@@ -15,8 +15,10 @@ namespace Cloudwatch
 
         private const string METRIC_CLIENT_BLOCKED = "Client Blocked";
         private const string METRIC_REPORT_REQUESTS_THROTTLED = "Report Requests-Throttled";
-        private const string METRIC_SEGMENT_WRITTEN = "Segment Written";
+        public const string METRIC_REPORT_REQUEST_CANCELLED = "Report Request-Request Cancelled";
+        public const string METRIC_REPORT_REQUEST_AVOIDED = "Report Request-Avoided";
         private const string METRIC_REPORT_REQUEST = "Report Request";
+        private const string METRIC_SEGMENT_WRITTEN = "Segment Written";
         private const string METRIC_HTTP_400 = "HTTP 400";
         private const string METRIC_HTTP_401 = "HTTP 401";
         private const string METRIC_HTTP_403 = "HTTP 403";
@@ -160,15 +162,17 @@ namespace Cloudwatch
         }
 
         // Read metrics
-        private static async Task ReadMetrics(Program program, int noOfDays = 5)
+        private static async Task ReadMetrics(Program program, int noOfDays = 3)
         {
             Console.WriteLine(">>>> Reading metrics");
 
             List<(string, string)> metrics = new List<(string, string)> {
                 ("metricRequestClientBlocked", METRIC_CLIENT_BLOCKED),
                 ("metricRequestReportRequestsThrottled", METRIC_REPORT_REQUESTS_THROTTLED),
-                ("metricRequestSegmentWritten", METRIC_SEGMENT_WRITTEN),
+                ("metricRequestReportRequestsCancelled", METRIC_REPORT_REQUEST_CANCELLED),
+                ("metricRequestReportRequestsAvoided", METRIC_REPORT_REQUEST_AVOIDED),
                 ("metricRequestReportRequest", METRIC_REPORT_REQUEST),
+                ("metricRequestSegmentWritten", METRIC_SEGMENT_WRITTEN),                
                 ("metricRequest400", METRIC_HTTP_400),
                 ("metricRequest401", METRIC_HTTP_401),
                 ("metricRequest403", METRIC_HTTP_403),
