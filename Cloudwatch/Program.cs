@@ -40,6 +40,8 @@ namespace Cloudwatch
         private const string READ_METRICS = "Read Metrics";
         private const string WRITE_READ_METRICS = "Read Write Metrics";
 
+        private const int DEFAULT_NUMBER_OF_DAYS_TO_READ = 7;
+
         private readonly IAmazonCloudWatch CloudwatchClient = getCloudwatchClient();
 
         private static IAmazonCloudWatch getCloudwatchClient()
@@ -162,7 +164,7 @@ namespace Cloudwatch
         }
 
         // Read metrics
-        private static async Task ReadMetrics(Program program, int noOfDays = 3)
+        private static async Task ReadMetrics(Program program, int noOfDays = DEFAULT_NUMBER_OF_DAYS_TO_READ)
         {
             Console.WriteLine(">>>> Reading metrics");
 
