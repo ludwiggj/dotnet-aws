@@ -13,6 +13,7 @@ namespace Cloudwatch
     {
         private const string GA_METRICS_NAMESPACE = "SessionCam/BiDirectionalReportProcessor/GoogleAnalytics";
 
+        private const string METRIC_METRIC_READ = "Metric Read";
         private const string METRIC_CLIENT_BLOCKED = "Client Blocked";
         private const string METRIC_REPORT_REQUESTS_THROTTLED = "Report Requests-Throttled";
         public const string METRIC_REPORT_REQUEST_CANCELLED = "Report Request-Request Cancelled";
@@ -42,12 +43,15 @@ namespace Cloudwatch
 
         private const int DEFAULT_NUMBER_OF_DAYS_TO_READ = 7;
 
+        private const string PROFILE_NAME_AWS_TEST = "default";
+        private const string PROFILE_NAME_AWS_LIVE = "live";
+
         private readonly IAmazonCloudWatch CloudwatchClient = getCloudwatchClient();
 
         private static IAmazonCloudWatch getCloudwatchClient()
         {
             var sharedFile = new SharedCredentialsFile();
-            sharedFile.TryGetProfile("live", out var profile);
+            sharedFile.TryGetProfile(PROFILE_NAME_AWS_LIVE, out var profile);
             AWSCredentialsFactory.TryGetAWSCredentials(profile, sharedFile, out var credentials);
             return new AmazonCloudWatchClient(credentials);
         }        
@@ -115,7 +119,7 @@ namespace Cloudwatch
 
             foreach (var m in metrics)
             {
-                Console.WriteLine($"Time [{m.TimestampUtc.ToString("HH:mm:ss")}] UTC, Value [{m.Value}]");
+                Console.WriteLine($"Time [{m.TimestampUtc.ToString("HH:mm:ss")}] UTC, Metric Name [{METRIC_NAME_429_REQUESTS_PER_DAY}] Metric Value [{m.Value}]");
             }
 
             await program.SendMetricsBatchAsync(GA_METRICS_NAMESPACE, metrics);
@@ -169,6 +173,7 @@ namespace Cloudwatch
             Console.WriteLine(">>>> Reading metrics");
 
             List<(string, string)> metrics = new List<(string, string)> {
+                ("metricRequestMetricRead", METRIC_METRIC_READ),
                 ("metricRequestClientBlocked", METRIC_CLIENT_BLOCKED),
                 ("metricRequestReportRequestsThrottled", METRIC_REPORT_REQUESTS_THROTTLED),
                 ("metricRequestReportRequestsCancelled", METRIC_REPORT_REQUEST_CANCELLED),
@@ -205,12 +210,18 @@ namespace Cloudwatch
 
                     Console.WriteLine($"Getting metrics from [{startTimeUTC}] to [{endTimeUTC}]");
 
+                    List<double> metricList = new List<double>();
                     foreach ((string metricQueryId, string metricName) in metrics)
                     {
+                        // TODO - Inefficient to send a single metric request per metric
                         GetMetricDataResponse resp = await program.GetMetricsAsync(startTimeUTC, endTimeUTC, metricQueryId, metricName);
-
-                        Console.WriteLine($"Metric [{metricName}] count is [{GetMetricCount(resp)}]");
+                        double metricCount = GetMetricCount(resp);
+                        Console.WriteLine($"Metric [{metricName}] count is [{metricCount}]");
+                        metricList.Add(metricCount);
                     }
+                    Console.WriteLine("Metrics in CSV format:");
+                    Console.WriteLine(String.Join(",", metricList));
+                    Console.WriteLine();
                 }
             }
             else
