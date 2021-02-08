@@ -15,7 +15,8 @@ namespace Cloudwatch
 
         private const string METRIC_METRIC_READ = "Metric Read";
         private const string METRIC_CLIENT_BLOCKED = "Client Blocked";
-        private const string METRIC_REPORT_REQUESTS_THROTTLED = "Report Requests-Throttled";
+        private const string METRIC_REPORT_REQUEST_ALL_THROTTLED = "Report Request-All Throttled";
+        private const string METRIC_REPORT_REQUEST_THROTTLED = "Report Request-Throttled";
         public const string METRIC_REPORT_REQUEST_CANCELLED = "Report Request-Request Cancelled";
         public const string METRIC_REPORT_REQUEST_AVOIDED = "Report Request-Avoided";
         private const string METRIC_REPORT_REQUEST = "Report Request";
@@ -175,9 +176,10 @@ namespace Cloudwatch
             List<(string, string)> metrics = new List<(string, string)> {
                 ("metricRequestMetricRead", METRIC_METRIC_READ),
                 ("metricRequestClientBlocked", METRIC_CLIENT_BLOCKED),
-                ("metricRequestReportRequestsThrottled", METRIC_REPORT_REQUESTS_THROTTLED),
-                ("metricRequestReportRequestsCancelled", METRIC_REPORT_REQUEST_CANCELLED),
-                ("metricRequestReportRequestsAvoided", METRIC_REPORT_REQUEST_AVOIDED),
+                ("metricRequestReportRequestAllThrottled", METRIC_REPORT_REQUEST_ALL_THROTTLED),
+                ("metricRequestReportRequestThrottled", METRIC_REPORT_REQUEST_THROTTLED),
+                ("metricRequestReportRequestCancelled", METRIC_REPORT_REQUEST_CANCELLED),
+                ("metricRequestReportRequestAvoided", METRIC_REPORT_REQUEST_AVOIDED),
                 ("metricRequestReportRequest", METRIC_REPORT_REQUEST),
                 ("metricRequestSegmentWritten", METRIC_SEGMENT_WRITTEN),                
                 ("metricRequest400", METRIC_HTTP_400),
@@ -201,6 +203,7 @@ namespace Cloudwatch
             {
                 Console.WriteLine($"TimeZone: {pst}");
                 var currentDateInTimeZone = CurrentDateInTimeZone(pst);
+                List<List<double>> metricsByDay = new List<List<double>>();
                 for (int i = 0; i < noOfDays; i++)
                 {
                     DateTime currentDateInPST = currentDateInTimeZone.AddDays(-i);
@@ -208,21 +211,28 @@ namespace Cloudwatch
                     DateTime startTimeUTC = ConvertDateToUTC(currentDateInPST, pst);
                     DateTime endTimeUTC = ConvertDateToUTC(nextDateInPST, pst);
 
+                    Console.WriteLine();
                     Console.WriteLine($"Getting metrics from [{startTimeUTC}] to [{endTimeUTC}]");
+                    Console.WriteLine();
 
-                    List<double> metricList = new List<double>();
+                    List<double> metricsForDay = new List<double>();
                     foreach ((string metricQueryId, string metricName) in metrics)
                     {
                         // TODO - Inefficient to send a single metric request per metric
                         GetMetricDataResponse resp = await program.GetMetricsAsync(startTimeUTC, endTimeUTC, metricQueryId, metricName);
                         double metricCount = GetMetricCount(resp);
                         Console.WriteLine($"Metric [{metricName}] count is [{metricCount}]");
-                        metricList.Add(metricCount);
+                        metricsForDay.Add(metricCount);
                     }
-                    Console.WriteLine("Metrics in CSV format:");
-                    Console.WriteLine(String.Join(",", metricList));
-                    Console.WriteLine();
+                    metricsByDay.Add(metricsForDay);
                 }
+                Console.WriteLine();
+                Console.WriteLine("Metrics in CSV format (in same date order):");
+                foreach (List<double> reportMetrics in metricsByDay)
+                {
+                    Console.WriteLine(String.Join(",", reportMetrics));
+                }
+                Console.WriteLine();
             }
             else
             {
