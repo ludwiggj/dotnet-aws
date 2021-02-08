@@ -41,6 +41,7 @@ namespace Cloudwatch
         private const string WRITE_METRICS = "Write Metrics";
         private const string READ_METRICS = "Read Metrics";
         private const string WRITE_READ_METRICS = "Read Write Metrics";
+        private const int REPORT_REQUEST_QUOTA_OFFSET_MINUTES = 60;
 
         private const int DEFAULT_NUMBER_OF_DAYS_TO_READ = 7;
 
@@ -202,11 +203,12 @@ namespace Cloudwatch
             if (pst != null)
             {
                 Console.WriteLine($"TimeZone: {pst}");
+                Console.WriteLine($"REPORT_REQUEST_QUOTA_OFFSET_MINUTES: {REPORT_REQUEST_QUOTA_OFFSET_MINUTES}");
                 var currentDateInTimeZone = CurrentDateInTimeZone(pst);
                 List<List<double>> metricsByDay = new List<List<double>>();
                 for (int i = 0; i < noOfDays; i++)
                 {
-                    DateTime currentDateInPST = currentDateInTimeZone.AddDays(-i);
+                    DateTime currentDateInPST = currentDateInTimeZone.AddDays(-i).AddMinutes(REPORT_REQUEST_QUOTA_OFFSET_MINUTES);
                     DateTime nextDateInPST = currentDateInPST.AddDays(1).AddSeconds(-1);
                     DateTime startTimeUTC = ConvertDateToUTC(currentDateInPST, pst);
                     DateTime endTimeUTC = ConvertDateToUTC(nextDateInPST, pst);
