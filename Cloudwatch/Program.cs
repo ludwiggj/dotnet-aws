@@ -15,18 +15,18 @@ namespace Cloudwatch
 
         private const string METRIC_METRIC_READ = "Metric Read";
         private const string METRIC_CLIENT_BLOCKED = "Client Blocked";
-        private const string METRIC_REPORT_REQUEST_ALL_THROTTLED = "Report Request-All Throttled";
-        private const string METRIC_REPORT_REQUEST_THROTTLED = "Report Request-Throttled";
-        public const string METRIC_REPORT_REQUEST_CANCELLED = "Report Request-Request Cancelled";
-        public const string METRIC_REPORT_REQUEST_AVOIDED = "Report Request-Avoided";
-        private const string METRIC_REPORT_REQUEST = "Report Request";
+        private const string METRIC_REPORT_REQUEST_CANCELLED_ALL = "Request-Cancelled-All";
+        private const string METRIC_REPORT_REQUEST_CANCELLED_DAILY_LIMIT = "Request-Cancelled-Daily Limit";
+        private const string METRIC_REPORT_REQUEST_CANCELLED_ERROR_RATE = "Request-Cancelled-Error Rate";
+        private const string METRIC_REPORT_REQUEST_AVOIDED = "Request-Avoided";
+        private const string METRIC_REPORT_REQUEST = "Request";
         private const string METRIC_SEGMENT_WRITTEN = "Segment Written";
         private const string METRIC_HTTP_400 = "HTTP 400";
         private const string METRIC_HTTP_401 = "HTTP 401";
         private const string METRIC_HTTP_403 = "HTTP 403";
         private const string METRIC_HTTP_429_FAILED_REQUESTS_TOO_HIGH = "HTTP 429-Failed reqs high";
         private const string METRIC_HTTP_429_OTHER = "HTTP 429-Other";
-        private const string METRIC_NAME_429_REQUESTS_PER_DAY = "HTTP 429-Reqs/day";
+        private const string METRIC_HTTP_429_REQUESTS_PER_DAY = "HTTP 429-Reqs/day";
         private const string METRIC_HTTP_429_REQUESTS_PER_USER_PER_100s = "HTTP 429-Reqs/user/100s";
         private const string METRIC_HTTP_429_REQUESTS_PER_VIEW_PER_DAY = "HTTP 429-Reqs/view/day";
         private const string METRIC_HTTP_429_TOO_MANY_CONCURRENT_CONNECTIONS = "HTTP 429-Concurrent conns";
@@ -117,11 +117,11 @@ namespace Cloudwatch
         private static async Task WriteMetrics(Program program)
         {
             Console.WriteLine(">>>> Writing metrics");
-            MetricDatum[] metrics = BuildMetrics(METRIC_NAME_429_REQUESTS_PER_DAY, StandardUnit.Count, 1);
+            MetricDatum[] metrics = BuildMetrics(METRIC_HTTP_429_REQUESTS_PER_DAY, StandardUnit.Count, 1);
 
             foreach (var m in metrics)
             {
-                Console.WriteLine($"Time [{m.TimestampUtc.ToString("HH:mm:ss")}] UTC, Metric Name [{METRIC_NAME_429_REQUESTS_PER_DAY}] Metric Value [{m.Value}]");
+                Console.WriteLine($"Time [{m.TimestampUtc.ToString("HH:mm:ss")}] UTC, Metric Name [{METRIC_HTTP_429_REQUESTS_PER_DAY}] Metric Value [{m.Value}]");
             }
 
             await program.SendMetricsBatchAsync(GA_METRICS_NAMESPACE, metrics);
@@ -177,18 +177,18 @@ namespace Cloudwatch
             List<(string, string)> metrics = new List<(string, string)> {
                 ("metricRequestMetricRead", METRIC_METRIC_READ),
                 ("metricRequestClientBlocked", METRIC_CLIENT_BLOCKED),
-                ("metricRequestReportRequestAllThrottled", METRIC_REPORT_REQUEST_ALL_THROTTLED),
-                ("metricRequestReportRequestThrottled", METRIC_REPORT_REQUEST_THROTTLED),
-                ("metricRequestReportRequestCancelled", METRIC_REPORT_REQUEST_CANCELLED),
+                ("metricRequestReportRequestCancelledAll", METRIC_REPORT_REQUEST_CANCELLED_ALL),
+                ("metricRequestReportRequestCancelledDailyLimit", METRIC_REPORT_REQUEST_CANCELLED_DAILY_LIMIT),
+                ("metricRequestReportRequestCancelledErrorRate", METRIC_REPORT_REQUEST_CANCELLED_ERROR_RATE),
                 ("metricRequestReportRequestAvoided", METRIC_REPORT_REQUEST_AVOIDED),
                 ("metricRequestReportRequest", METRIC_REPORT_REQUEST),
-                ("metricRequestSegmentWritten", METRIC_SEGMENT_WRITTEN),                
+                ("metricRequestSegmentWritten", METRIC_SEGMENT_WRITTEN),   
                 ("metricRequest400", METRIC_HTTP_400),
                 ("metricRequest401", METRIC_HTTP_401),
                 ("metricRequest403", METRIC_HTTP_403),
                 ("metricRequest429FailedRequestsTooHigh", METRIC_HTTP_429_FAILED_REQUESTS_TOO_HIGH),
                 ("metricRequest429Other", METRIC_HTTP_429_OTHER),
-                ("metricRequest429RequestsPerDay", METRIC_NAME_429_REQUESTS_PER_DAY),
+                ("metricRequest429RequestsPerDay", METRIC_HTTP_429_REQUESTS_PER_DAY),
                 ("metricRequest429RequestsPerUserPer100s", METRIC_HTTP_429_REQUESTS_PER_USER_PER_100s),
                 ("metricRequest429RequestsPerViewPerDay", METRIC_HTTP_429_REQUESTS_PER_VIEW_PER_DAY),
                 ("metricRequest429TooManyConcurrentConnections", METRIC_HTTP_429_TOO_MANY_CONCURRENT_CONNECTIONS),
