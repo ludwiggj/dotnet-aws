@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -205,7 +205,7 @@ namespace Cloudwatch
                 Console.WriteLine($"TimeZone: {pst}");
                 Console.WriteLine($"REPORT_REQUEST_QUOTA_OFFSET_MINUTES: {REPORT_REQUEST_QUOTA_OFFSET_MINUTES}");
                 var currentDateInTimeZone = CurrentDateInTimeZone(pst);
-                List<List<double>> metricsByDay = new List<List<double>>();
+                List<(string startTime, List<double> metrics)> metricsByDay = new List<(string, List<double>)>();
                 for (int i = 0; i < noOfDays; i++)
                 {
                     DateTime currentDateInPST = currentDateInTimeZone.AddDays(-i).AddMinutes(REPORT_REQUEST_QUOTA_OFFSET_MINUTES);
@@ -226,13 +226,13 @@ namespace Cloudwatch
                         Console.WriteLine($"Metric [{metricName}] count is [{metricCount}]");
                         metricsForDay.Add(metricCount);
                     }
-                    metricsByDay.Add(metricsForDay);
+                    metricsByDay.Add((startTimeUTC.ToShortDateString(), metricsForDay));
                 }
                 Console.WriteLine();
                 Console.WriteLine("Metrics in CSV format (in same date order):");
-                foreach (List<double> reportMetrics in metricsByDay)
+                foreach (var item in metricsByDay)
                 {
-                    Console.WriteLine(String.Join(",", reportMetrics));
+                    Console.WriteLine($"{item.startTime},{String.Join(",", item.metrics)}");
                 }
                 Console.WriteLine();
             }
